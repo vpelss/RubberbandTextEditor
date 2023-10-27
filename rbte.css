@@ -1,0 +1,13 @@
+#faketext{
+white-space: nowrap;
+}
+
+.cell{
+  display: inline;
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+}
+
+.mark{
+  background-color : yellow;
+}
