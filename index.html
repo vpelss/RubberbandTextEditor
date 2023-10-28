@@ -41,12 +41,8 @@
 </head>
 
 <body>
-  <h4>This simple text editor alows you to mark multiple blocks of text and delete them</h4>
-<div id="editable" contenteditable="true" wrap="off">
-  text ggg <font color="red">t</font>ext text<br>text text text<br>text text text<br>
-</div>
-<button id="button" onclick="">focus</button>
-<br>
+  <h4>This simple JavaScript text editor allows you to mark multiple rectangular blocks of text and delete them.</h4>
+
 <p>Original Text</p>
 <textarea id="notepad" placeholder="paste troublesome text here" cols="100" rows="5" wrap="off">
 Example Example Example Example Example Example Example 
@@ -57,12 +53,18 @@ Example Example Example Example Example Example Example
 
 <p>Block delete area</p>
 <div id="faketext"></div>
+
+<p> </p>
+
+<div id="editable" contenteditable="true" wrap="off">
+  text ggg <font color="red">t</font>ext text<br>text text text<br>text text text<br>
+</div>
+<button id="button" onclick="">focus</button>
   
       <script id="rendered-js" >
 //This simple text editor alows you to mark multiple blocks of text and delete them
 
 var lines = []; //textarea
-var fake_text = []; //div higlight area
 var mousestate = "";
 var startpos = "";
 var endpos = "";
@@ -74,6 +76,7 @@ notepad.style.width = "100%";
 notepad.oninput = NotepadUpdate;
 NotepadUpdate();
 document.body.onkeydown = OnKeyPress;
+faketext.onmouseleave = OnMouseUp;
 
 function NotepadUpdate() {
   SetFakeText();
@@ -121,10 +124,20 @@ function OnMouseMove(el) {
   if (mousestate == "onmousedown") {
     //mark all from startpos to el.id in square
     [ex, ey] = el.id.replace("cell_", "").split("_");
+    //allow for reverse rubberbands
+    if (sx > ex) {
+      [sx, ex] = [ex, sx];
+    }
+    if (sy > ey) {
+      [sy, ey] = [ey, sy];
+    }
     for (let y = sy; y <= ey; y++) {
       for (let x = sx; x <= ex; x++) {
         let textID = "cell_" + x + "_" + y;
-        document.getElementById(textID).classList.add("mark");
+        if (document.getElementById(textID)) {
+          //element exists
+          document.getElementById(textID).classList.add("mark");
+        }
       }
     }
   }
@@ -137,15 +150,14 @@ function OnMouseUp(el) {
 
 function OnKeyPress() {
   let new_text = "";
-  let x, y;
   let key = event.key;
   var activeElement = document.activeElement;
   if (activeElement != notepad) {
+    //allows us to edit original text box
     if (key == "Backspace" || key == "Delete") {
       //because Apple is stupid
-      //if (key == "Backspace") {
-      //for each letter in lines
       lines.forEach(function (line, y) {
+        //check each letter and only rebuild with unmarked text
         let letter_array = line.split(""); //split into letters
         letter_array.forEach(function (letter, x) {
           let el = document.getElementById("cell_" + x + "_" + y);
@@ -155,8 +167,8 @@ function OnKeyPress() {
         });
         new_text = new_text + "\r\n";
       });
-      notepad.value = new_text; //rebuild text from modified text_array
-      NotepadUpdate(); //oninput does not work progamatically???
+      notepad.value = new_text;
+      NotepadUpdate(); //oninput does not work programmatically???
     }
   }
 }
