@@ -1,13 +1,168 @@
-<div id="editable" contenteditable="true">
-  text text text<br>text text text<br>text text text<br>
-</div>
-<button id="button" onclick="setCaret()">focus</button>
-<br>
 
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  
+  
+  
+
+  <title>CodePen - RubberBandText Editor : WIP</title>
+
+    <link rel="canonical" href="https://codepen.io/vpelss/pen/jOdOMLe">
+  
+  
+  
+  
+<style>
+#faketext {
+  white-space: nowrap;
+  border-style: solid;
+  border-width: 1pt;
+  resize: both;
+  overflow: auto;
+}
+
+.cell {
+  display: inline;
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+}
+
+.mark {
+  background-color: yellow;
+}
+</style>
+
+  
+  
+  
+</head>
+
+<body>
+  <h4>This simple text editor alows you to mark multiple blocks of text and delete them</h4>
+<div id="editable" contenteditable="true" wrap="off">
+  text ggg <font color="red">t</font>ext text<br>text text text<br>text text text<br>
+</div>
+<button id="button" onclick="">focus</button>
+<br>
+<p>Original Text</p>
 <textarea id="notepad" placeholder="paste troublesome text here" cols="100" rows="5" wrap="off">
-Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example 
-Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example 
-Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example Example 
+Example Example Example Example Example Example Example 
+Example Example Example Example Example Example Example 
+Example Example Example Example Example Example Example 
+Example Example Example Example Example Example Example 
 </textarea>
 
+<p>Block delete area</p>
 <div id="faketext"></div>
+  
+      <script id="rendered-js" >
+//This simple text editor alows you to mark multiple blocks of text and delete them
+
+var lines = []; //textarea
+var fake_text = []; //div higlight area
+var mousestate = "";
+var startpos = "";
+var endpos = "";
+
+let notepad = document.getElementById("notepad");
+let faketext = document.getElementById("faketext");
+notepad.style.width = "100%";
+
+notepad.oninput = NotepadUpdate;
+NotepadUpdate();
+document.body.onkeydown = OnKeyPress;
+
+function NotepadUpdate() {
+  SetFakeText();
+}
+
+function SetFakeText() {
+  let div_text = "";
+  lines = notepad.value.split(/\r?\n/); //split lines
+  lines.forEach(function (line, y) {
+    let letter_array = line.split(""); //split all
+    letter_array.forEach(function (letter, x) {
+      let id = "cell_" + x + "_" + y;
+      let EOnMouseDown = "onmousedown='OnMouseDown(this);' ";
+      let EOnMouseMove = "onmousemove='OnMouseMove(this);' ";
+      let EOnMouseUp = "onmouseup='OnMouseUp(this);' ";
+      div_text =
+        div_text +
+        "<DIV class='cell' id='" +
+        id +
+        "' " +
+        EOnMouseDown +
+        EOnMouseMove +
+        EOnMouseUp +
+        ">" +
+        letter +
+        "</div>";
+    });
+    div_text = div_text + "</br>";
+  });
+  faketext.innerHTML = div_text;
+  //match edit box sizes
+  faketext.style.width = "" + notepad.clientWidth + "px";
+  faketext.style.height = "" + notepad.clientHeight + "px";
+}
+
+function OnMouseDown(el) {
+  mousestate = "onmousedown";
+  startpos = el.id;
+  el.classList.add("mark");
+}
+
+function OnMouseMove(el) {
+  let sx, sy, ex, ey;
+  [sx, sy] = startpos.replace("cell_", "").split("_");
+  if (mousestate == "onmousedown") {
+    //mark all from startpos to el.id in square
+    [ex, ey] = el.id.replace("cell_", "").split("_");
+    for (let y = sy; y <= ey; y++) {
+      for (let x = sx; x <= ex; x++) {
+        let textID = "cell_" + x + "_" + y;
+        document.getElementById(textID).classList.add("mark");
+      }
+    }
+  }
+}
+
+function OnMouseUp(el) {
+  mousestate = "onmouseup";
+  endpos = el.id;
+}
+
+function OnKeyPress() {
+  let new_text = "";
+  let x, y;
+  let key = event.key;
+  var activeElement = document.activeElement;
+  if (activeElement != notepad) {
+    if (key == "Backspace" || key == "Delete") {
+      //because Apple is stupid
+      //if (key == "Backspace") {
+      //for each letter in lines
+      lines.forEach(function (line, y) {
+        let letter_array = line.split(""); //split into letters
+        letter_array.forEach(function (letter, x) {
+          let el = document.getElementById("cell_" + x + "_" + y);
+          if (!el.classList.contains("mark")) {
+            new_text = new_text + letter;
+          }
+        });
+        new_text = new_text + "\r\n";
+      });
+      notepad.value = new_text; //rebuild text from modified text_array
+      NotepadUpdate(); //oninput does not work progamatically???
+    }
+  }
+}
+    </script>
+
+  
+</body>
+
+</html>
