@@ -1,6 +1,6 @@
-# Rubberband Text Editor
+# Rubber Band Text Editor
 
-Allows you to rubber band highlight multiple text areas and delete them.
+This simple JavaScript text editor allows you to mark multiple rectangular blocks of text and delete them.
 
 https://emogic.com/
 
