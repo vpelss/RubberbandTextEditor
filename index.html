@@ -3,9 +3,20 @@
 <html lang="en" >
 
 <head>
-  <title>RubberBandText Editor</title>
+  <meta charset="UTF-8">
+  
+  
+  
+
+  <title>RubberBandText Editor : WIP</title>
+
+    <link rel="canonical" href="https://codepen.io/vpelss/pen/jOdOMLe">
+  
+  
+  
+  
 <style>
-#faketext {
+#blockeditor {
   white-space: nowrap;
   border-style: solid;
   border-width: 1pt;
@@ -24,45 +35,51 @@
 }
 </style>
 
+  
+  
+  
 </head>
 
 <body>
   <h4>This simple JavaScript text editor allows you to mark multiple rectangular blocks of text and delete them.</h4>
 
-<p>Original text. Standard editor.</p>
+<p>Notepad editor: Paste your original text here.</p>
 <textarea id="notepad" placeholder="paste troublesome text here" cols="100" rows="5" wrap="off">
-  Merge Test
 Example Example Example Example Example Example Example 
 Example Example Example Example Example Example Example 
+Example Example RemoveMe Example Example Example Example 
+Example Example RemoveMe Example Example Example Example
+Example Example RemoveMe Example Example Example Example
 Example Example Example Example Example Example Example 
 Example Example Example Example Example Example Example 
 </textarea>
 
-<p>Block delete area only. Click and drag over text to delete. Then push 'Delete' key.</p>
-<div id="faketext"></div>
-
-      <script id="rendered-js" >
-//This simple text editor alows you to mark multiple blocks of text and delete them
+<p>Block/Mark and Delete editor only. Click and drag over the text to highlight the text you want to delete. Then push 'Delete' key to delete.</p>
+<div id="blockeditor"></div>
+  
+    <script id="rendered-js" >
+//This simple text editor alows you to mark multiple rectangular blocks of text and delete them
 
 var lines = []; //textarea
 var mousestate = "";
 var startpos = "";
-var endpos = "";
+var endpos = ""; //not really used
 
 let notepad = document.getElementById("notepad");
-let faketext = document.getElementById("faketext");
+let blockeditor = document.getElementById("blockeditor");
 notepad.style.width = "100%";
 
-notepad.oninput = NotepadUpdate;
-NotepadUpdate();
 document.body.onkeydown = OnKeyPress;
-faketext.onmouseleave = OnMouseUp;
+blockeditor.onmouseleave = OnMouseUp;
 
-function NotepadUpdate() {
-  SetFakeText();
+//any change to notepad will trigger BuildBlockEditor
+notepad.oninput = NotepadUpdated; 
+NotepadUpdated();
+function NotepadUpdated() {
+  BuildBlockEditor();
 }
 
-function SetFakeText() {
+function BuildBlockEditor() { 
   let div_text = "";
   lines = notepad.value.split(/\r?\n/); //split lines
   lines.forEach(function (line, y) {
@@ -86,10 +103,8 @@ function SetFakeText() {
     });
     div_text = div_text + "</br>";
   });
-  faketext.innerHTML = div_text;
-  //match edit box sizes
-  faketext.style.width = "" + notepad.clientWidth + "px";
-  faketext.style.height = "" + notepad.clientHeight + "px";
+  blockeditor.innerHTML = div_text;
+  MatchSize();  //match edit box sizes
 }
 
 function OnMouseDown(el) {
@@ -98,21 +113,23 @@ function OnMouseDown(el) {
   el.classList.add("mark");
 }
 
-function OnMouseMove(el) {
-  let sx, sy, ex, ey;
-  [sx, sy] = startpos.replace("cell_", "").split("_");
-  if (mousestate == "onmousedown") {
-    //mark all from startpos to el.id in square
-    [ex, ey] = el.id.replace("cell_", "").split("_");
-    //allow for reverse rubberbands
-    if (sx > ex) {
-      [sx, ex] = [ex, sx];
+function OnMouseMove(el) {//each time the mouse moves
+  let start_x, start_y, end_x, end_y;
+  if (mousestate == "onmousedown") { //if the mouse is in a 'mousedown' state
+    
+     [start_x, start_y] = startpos.replace("cell_", "").split("_"); //get x,y start position
+    [end_x, end_y] = el.id.replace("cell_", "").split("_"); //get current x,y end position
+    //our code always works right to left and top to bottom
+    //so switch start and end values if start values are greater than end values
+    if (start_x > end_x) {
+      [start_x, end_x] = [end_x, start_x];
     }
-    if (sy > ey) {
-      [sy, ey] = [ey, sy];
+    if (start_y > end_y) {
+      [start_y, end_y] = [end_y, start_y];
     }
-    for (let y = sy; y <= ey; y++) {
-      for (let x = sx; x <= ex; x++) {
+    //set the class as 'mark' for all letters in the square from startpos to el.id 
+    for (let y = start_y; y <= end_y; y++) {
+      for (let x = start_x; x <= end_x; x++) {
         let textID = "cell_" + x + "_" + y;
         if (document.getElementById(textID)) {
           //element exists
@@ -148,11 +165,24 @@ function OnKeyPress() {
         new_text = new_text + "\r\n";
       });
       notepad.value = new_text;
-      NotepadUpdate(); //oninput does not work programmatically???
+      NotepadUpdated(); //oninput does not work programmatically???
     }
   }
 }
-    </script>
+
+function MatchSize(){
+   //match edit box sizes
+  blockeditor.style.width = "" + notepad.clientWidth + "px";
+  blockeditor.style.height = "" + notepad.clientHeight + "px";
+}
+
+const resize_ob = new ResizeObserver(function(entries) {
+  MatchSize();
+});
+
+// start observing for resize
+resize_ob.observe(document.querySelector("#notepad"));
+  </script>
 
   
 </body>
