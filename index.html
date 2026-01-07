@@ -54,7 +54,7 @@ Example Example Example Example Example Example Example
 Example Example Example Example Example Example Example 
 </textarea>
 
-<p>Block/Mark and Delete editor only. Click and drag over the text to block highlight the text you want to delete. Then push 'Delete' key to delete the block highlighted areas. Clicking 'u' will undo only the last block highlight.</p>
+<p>Block/Mark and Delete editor only. Click and drag over the text to block highlight the text you want to delete. Then push 'Delete' key to delete the block highlighted areas. Clicking 'u' will undo  the last block highlight.</p>
 <div id="blockeditor"></div>
   
     <script id="rendered-js" >
@@ -65,6 +65,7 @@ var mousestate = "";
 var startpos = "";
 var endpos = ""; //not really used
 var last_chars_marked = []; //so we can undo once
+var last_chars_marked_history = []; //each block marked so we can undo
 
 let notepad = document.getElementById("notepad");
 let blockeditor = document.getElementById("blockeditor");
@@ -112,6 +113,7 @@ function BuildBlockEditor() {
 }
 
 function OnMouseDown(el) {
+  last_chars_marked = [];
   mousestate = "onmousedown";
   startpos = el.id;
   el.classList.add("mark");
@@ -149,6 +151,7 @@ function OnMouseMove(el) {
 function OnMouseUp(el) {
   mousestate = "onmouseup";
   endpos = el.id;
+  last_chars_marked_history.push(last_chars_marked);
 }
 
 function OnKeyPress_blockeditor() {
@@ -171,14 +174,17 @@ function OnKeyPress_blockeditor() {
       new_text = new_text + "\r\n";
     });
     notepad.value = new_text;
-    NotepadUpdated(); //rebuild blockeditor 
+    NotepadUpdated(); //rebuild blockeditor
   }
   if (key == "u") {
     //undo last block mark
-    last_chars_marked.forEach(function (character_id) {
-      let el = document.getElementById(character_id);
-      el.classList.remove("mark");
-    });
+    if (last_chars_marked_history.length > 0) {
+      last_chars_marked = last_chars_marked_history.pop();
+      last_chars_marked.forEach(function (character_id) {
+        let el = document.getElementById(character_id);
+        el.classList.remove("mark");
+      });
+    }
   }
 }
 
