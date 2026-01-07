@@ -54,7 +54,7 @@ Example Example Example Example Example Example Example
 Example Example Example Example Example Example Example 
 </textarea>
 
-<p>Block/Mark and Delete editor only. Click and drag over the text to highlight the text you want to delete. Then push 'Delete' key to delete.</p>
+<p>Block/Mark and Delete editor only. Click and drag over the text to block highlight the text you want to delete. Then push 'Delete' key to delete the block highlighted areas. Clicking 'u' will undo only the last block highlight.</p>
 <div id="blockeditor"></div>
   
     <script id="rendered-js" >
@@ -64,27 +64,31 @@ var lines = []; //textarea
 var mousestate = "";
 var startpos = "";
 var endpos = ""; //not really used
+var last_chars_marked = []; //so we can undo once
 
 let notepad = document.getElementById("notepad");
 let blockeditor = document.getElementById("blockeditor");
+blockeditor.setAttribute("tabindex", "0"); //allow div to get focus
 notepad.style.width = "100%";
 
-document.body.onkeydown = OnKeyPress;
+blockeditor.onkeydown = OnKeyPress_blockeditor;
+//document.body.onkeydown = OnKeyPress_blockeditor;
 blockeditor.onmouseleave = OnMouseUp;
 
 //any change to notepad will trigger BuildBlockEditor
-notepad.oninput = NotepadUpdated; 
+notepad.oninput = NotepadUpdated;
 NotepadUpdated();
 function NotepadUpdated() {
   BuildBlockEditor();
 }
 
-function BuildBlockEditor() { 
+function BuildBlockEditor() {
   let div_text = "";
   lines = notepad.value.split(/\r?\n/); //split lines
   lines.forEach(function (line, y) {
     let letter_array = line.split(""); //split all
     letter_array.forEach(function (letter, x) {
+      //for each letter we need to add 3 events a 'cell' class and an id cell_x_y
       let id = "cell_" + x + "_" + y;
       let EOnMouseDown = "onmousedown='OnMouseDown(this);' ";
       let EOnMouseMove = "onmousemove='OnMouseMove(this);' ";
@@ -104,7 +108,7 @@ function BuildBlockEditor() {
     div_text = div_text + "</br>";
   });
   blockeditor.innerHTML = div_text;
-  MatchSize();  //match edit box sizes
+  MatchSize(); //match edit box sizes
 }
 
 function OnMouseDown(el) {
@@ -113,11 +117,12 @@ function OnMouseDown(el) {
   el.classList.add("mark");
 }
 
-function OnMouseMove(el) {//each time the mouse moves
+function OnMouseMove(el) {
+  //each time the mouse moves
   let start_x, start_y, end_x, end_y;
-  if (mousestate == "onmousedown") { //if the mouse is in a 'mousedown' state
-    
-     [start_x, start_y] = startpos.replace("cell_", "").split("_"); //get x,y start position
+  if (mousestate == "onmousedown") {
+    //if the mouse is in a 'mousedown' state
+    [start_x, start_y] = startpos.replace("cell_", "").split("_"); //get x,y start position
     [end_x, end_y] = el.id.replace("cell_", "").split("_"); //get current x,y end position
     //our code always works right to left and top to bottom
     //so switch start and end values if start values are greater than end values
@@ -127,13 +132,14 @@ function OnMouseMove(el) {//each time the mouse moves
     if (start_y > end_y) {
       [start_y, end_y] = [end_y, start_y];
     }
-    //set the class as 'mark' for all letters in the square from startpos to el.id 
+    //set the class as 'mark' for all letters in the square from startpos to el.id
     for (let y = start_y; y <= end_y; y++) {
       for (let x = start_x; x <= end_x; x++) {
         let textID = "cell_" + x + "_" + y;
         if (document.getElementById(textID)) {
-          //element exists
+          //element exists, set class as 'mark'
           document.getElementById(textID).classList.add("mark");
+          last_chars_marked.push(textID);
         }
       }
     }
@@ -145,38 +151,44 @@ function OnMouseUp(el) {
   endpos = el.id;
 }
 
-function OnKeyPress() {
-  let new_text = "";
+function OnKeyPress_blockeditor() {
+  //this is for blockeditor only
   let key = event.key;
+  let new_text = "";
   var activeElement = document.activeElement;
-  if (activeElement != notepad) {
-    //allows us to edit original text box
-    if (key == "Backspace" || key == "Delete") {
-      //because Apple is stupid
-      lines.forEach(function (line, y) {
-        //check each letter and only rebuild with unmarked text
-        let letter_array = line.split(""); //split into letters
-        letter_array.forEach(function (letter, x) {
-          let el = document.getElementById("cell_" + x + "_" + y);
-          if (!el.classList.contains("mark")) {
-            new_text = new_text + letter;
-          }
-        });
-        new_text = new_text + "\r\n";
+  if (key == "Backspace" || key == "Delete") {
+    //backspace because Apple is stupid and a delete key would cost another $100
+    last_chars_marked = [];
+    lines.forEach(function (line, y) {
+      //check each letter and only rebuild new_text with unmarked text
+      let letter_array = line.split(""); //split into letters
+      letter_array.forEach(function (letter, x) {
+        let el = document.getElementById("cell_" + x + "_" + y);
+        if (!el.classList.contains("mark")) {
+          new_text = new_text + letter;
+        }
       });
-      notepad.value = new_text;
-      NotepadUpdated(); //oninput does not work programmatically???
-    }
+      new_text = new_text + "\r\n";
+    });
+    notepad.value = new_text;
+    NotepadUpdated(); //rebuild blockeditor 
+  }
+  if (key == "u") {
+    //undo last block mark
+    last_chars_marked.forEach(function (character_id) {
+      let el = document.getElementById(character_id);
+      el.classList.remove("mark");
+    });
   }
 }
 
-function MatchSize(){
-   //match edit box sizes
+function MatchSize() {
+  //match edit box sizes
   blockeditor.style.width = "" + notepad.clientWidth + "px";
   blockeditor.style.height = "" + notepad.clientHeight + "px";
 }
 
-const resize_ob = new ResizeObserver(function(entries) {
+const resize_ob = new ResizeObserver(function (entries) {
   MatchSize();
 });
 
